@@ -1,0 +1,24 @@
+set linesize 220
+col operation for a30
+col object_name for a40
+col module for a30
+col OBJECT_OWNER for a20
+col OPTIONS for a30
+col PARSING_SCHEMA_NAME for a20
+COL LAST_ACTIVE_TIME FOR A20
+
+SELECT sq.sql_id,
+       sq.executions,
+       sq.parsing_schema_name,
+       sq.module,
+       to_char(sq.last_active_time, 'DD-MON-RR HH24:MI:SS') last_active_time,
+       sp.operation,
+       sp.options,
+--       sp.object_owner,
+--       sp.object_name
+FROM v$sql_plan sp
+JOIN v$sql sq ON sp.sql_id = sq.sql_id
+WHERE sp.object_owner = 'MY_SCHEMA'
+  AND sp.object_name = 'MY_TABLE'
+ORDER BY sq.last_active_time DESC
+;
