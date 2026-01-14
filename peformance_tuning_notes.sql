@@ -390,6 +390,142 @@ ALTER SESSION SET optimizer_dynamic_sampling=2;
 -- make sure to revoke dba from the user and change password back so that developpers can use the account
 -- don't leave DS on at 11 because it consumes a lot of resources(cpu) pay the price once, get a good plan and store said  plan to be re-run multiple times
 
+--11)
+-- command to show you how often stats are gathered
+
+SELECT last_analyzed, table_name, owner, num_rows, sample_size
+FROM dba_tables
+ORDER by last_analyzed
+
+
+--12)
+---- The following formula provides you with the library cache hit ratio:
+ SELECT SUM(pinhits)/sum(pins) Library_cache_hit_ratio
+from v$librarycache;
+
+
+----- Determining the Efficiency of the Library Cache
+SELECT namespace, pins, pinhits, reloads
+FROM V$LIBRARYCACHE
+order by namespace;
+-- creating a bind variable 
+
+--SQL> VARIABLE bindvar NUMBER;
+--SQL> BEGIN
+-- 2   :bindvar :=7900;
+-- 3   END;
+-- 4   /
+--
+SELECT ename FROM scott.emp WHERE empid = :bindvar;
+
+--This cuts hard parsing (and high latch activity) and the attendant CPU usage drastically, 
+--and dramatically reduces the time taken to retrieve data. For example, all the following 
+--statements can use the parsed version of the query that uses the bind variable:
+
+SELECT ename FROM scott.emp WHERE empid = 7499;
+SELECT ename FROM scott.emp WHERE empid = 7788;
+SELECT ename FROM scott.emp WHERE empid = 7902;
+--Unfortunately, in too many applications, literal values rather than bind values are used.
+-- You can alleviate this problem to some extent by setting up the following initialization 
+--parameter:
+--CURSOR_SHARING=FORCE
+--CURSOR_SHARING=SIMILAR
+
+--13)
+--- Determining sessions with a high number of parses
+SELECT s.sid, s.value "Hard Parses",
+t.value "Executions Count"
+FROM v$sesstat s, v$sesstat t
+WHERE s.sid=t.sid
+AND s.statistic#=(select statistic#
+FROM v$statname where name='parse count (hard)')
+AND t.statistic#=(select statistic#
+FROM v$statname where name='execute count')
+AND s.value>0
+ORDER BY 2 desc;
+
+--14)
+-- finding high cpu users
+SELECT n.username,
+s.sid,
+s.value
+FROM v$sesstat s,v$statname t, v$session n
+WHERE s.statistic# = t.statistic#
+AND n.sid = s.sid
+AND t.name='CPU used by this session'
+ORDER BY s.value desc;
+
+--15)
+-- determining session level cpu usage
+SELECT sid, s.value "Total CPU Used by this Session"
+FROM V$SESSTAT S
+WHERE S.statistic# = 12
+ORDER BY S.value DESC;
+
+--The total CPU time used by an instance (or a session) can be viewed as the sum of the following 
+--components:
+--total CPU time = parsing CPU usage + recursive CPU usage + other CPU usage
+
+
+--16)
+--- DECOMPOSITION OF TOTAL CPU USAGE
+SELECT name,value FROM V$SYSSTAT
+WHERE NAME IN ('CPU used by this session',
+'recursive cpu usage',
+'parse time cpu'); 
+
+--17)
+---Parse Time CPU Usage
+--a)
+	SELECT name, value FROM V$SYSSTAT
+WHERE name LIKE '%CPU%'
+
+--b)
+	SELECT name, value FROM V$SYSSTAT
+WHERE name LIKE '%parse%';
+
+--c)
+	SELECT a.value " Tot_CPU_Used_This_Session",
+b.value "Total_Parse_Count",
+c.value "Hard_Parse_Count",
+d.value "Parse_Time_CPU"
+FROM v$sysstat a,
+v$sysstat b,
+v$sysstat c,
+v$sysstat d
+WHERE a.name = 'CPU used by this session'
+AND b.name = 'parse count (total)'
+AND c.name = 'parse count (hard)'
+AND d.name = 'parse time cpu';
+-----------------------------------------------------------------------------
+
+--18)
+-----------------------------------------------------------------------------
+--TUNING SQL WHEN YOU KNOW THE SQL_TEXT EXAMPLE
+-----------------------------------------------------------------------------
+DECLARE
+ my_task_name VARCHAR2(30);
+ my_sqltext CLOB;
+BEGIN
+ my_sqltext := 'SELECT /*+ ORDERED */ *
+                FROM employees e, locations l, departments d
+                WHERE e.department_id = d.department_id AND
+                l.location_id = d.location_id AND
+                e.employee_id < :bnd';
+Next, I create the following tuning task:
+
+my_task_name := DBMS_SQLTUNE.CREATE_TUNING_TASK(
+         sql_text    => my_sqltext,
+         bind_list   => sql_binds(anydata.ConvertNumber(90)),
+         user_name   => 'HR',
+         scope       => 'COMPREHENSIVE',
+         time_limit  => 60,
+         task_name   => 'my_sql_tuning_task',
+         description => 'Task to tune a query on a specified employee');
+END;
+/
+--------------------------------------------------------------------------
+
 
 --References:
 -------------
