@@ -51,3 +51,11 @@ $tkprof /u01/app/oracle/diag/rdbms/TESTDB/TESTDB/trace/TESTDB_ora_2745911.trc
 
 --when prompted for output, enter the name of the output file you want
 --cat the generated file and analyze it for issues with your sql/session
+
+
+--steps to stop tracing a session
+begin
+  dbms_monitor.session_trace_disable (
+    session_id => <SID>, 
+    serial_num => <serial#>);
+end;
