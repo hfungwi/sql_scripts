@@ -7,16 +7,24 @@
 --You can find this from the v$sqlstat view using the
 --following...
 
-select * from (SELECT upper(sql_id), executions,
- ROUND (elapsed_time/1000000, 2) total_time,
- ROUND (cpu_time/1000000, 2) cpu_seconds
- FROM (SELECT * FROM V$SQLSTATS
- ORDER BY elapsed_time desc))
-where rownum <=10 ;
+SELECT  
+	    sess.username,
+	    sess.sid,
+        sess.serial#,
+        sess.sql_id,
+	sqlst.executions,
+	ROUND (sqlst.elapsed_time/1000000, 2) total_time,
+	ROUND (sqlst.cpu_time/1000000, 2) cpu_seconds 
+FROM     V$SESSION sess 
+INNER JOIN V$SQLSTATS sqlst ON sess.sql_id = sqlst.sql_id 
+ORDER BY elapsed_time desc
+     FETCH FIRST 10 rows only 
+/
+
 
 -- The above query ranks the transactions by the total number of elapsed seconds. 
 -- You can also rank the statements according to CPU seconds used.
--- Once you have the value for the HASH_VALUE column from the query you just ran, 
+-- Once you have the value for the SQL_ID column for the problematic SQL, 
 -- it's a simple matter to find out the execution plan for this statement, 
 -- which is in your library cache. The following query uses the V$SQL_PLAN view to get you 
 -- the execution plan for your longest-running SQL statements:
