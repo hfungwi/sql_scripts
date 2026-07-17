@@ -1,6 +1,6 @@
 ---
 --- Harris Fungwi
---- 17th July 200
+--- 17th July 2026
 --- compute compound interest
 ---
 
@@ -18,7 +18,7 @@ CREATE OR REPLACE TYPE compound_interest_tab_ot IS OBJECT
 CREATE OR REPLACE TYPE compound_interest_tab_nt IS TABLE OF compound_interest_tab_ot
 /
 
---create function
+--create pipelined table function
 CREATE OR REPLACE FUNCTION compute_compound_interest
   ( 
    initial_principal_in IN NUMBER
@@ -69,16 +69,20 @@ FROM compute_compound_interest( 1000, 0.1, 12);
 CREATE TABLE interest_on_loan (
    loan_id                      NUMBER
   ,period                       NUMBER
-  ,period_type                  VARCHAR2(32 CHAR)
+  ,loan_type                    VARCHAR2(32 CHAR) --e.g car payyment, mortgage,
+  ,period_type                  VARCHAR2(32 CHAR) --e.g year(s), day(s), month(s), week(s)
   ,starting_principal           NUMBER
   ,interest_accrued             NUMBER
   ,new_loan_amount              NUMBER
   ,CONSTRAINT interest_on_loan_pk PRIMARY KEY (loan_id, period) 
   );
 
+-- 
+-- compute compound interest for a credit card balance of 1000, interest rate of 22%, over a period of 12 months
+--
 INSERT INTO interest_on_loan
-SELECT 1, period, 'Car payment', initial_principal, interest_rate, new_principal 
-FROM compute_compound_interest( 1000, 0.1, 12);
+SELECT 1, period, 'Credit card payment', 'Month' initial_principal, interest_rate, new_principal 
+FROM compute_compound_interest( 1000, 0.22, 12);
 
 --select * from table
 SELECT * FROM interest_on_loan;
