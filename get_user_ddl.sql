@@ -30,8 +30,21 @@ END;
 -- GENERATE DDL FOR CREATING THE USER
 SELECT DBMS_METADATA.GET_DDL('USER','&username') FROM dual;
 
---get ddl for all grantes to user
-SELECT DBMS_METADATA.GET_GRANTED_DDL('ROLE_GRANT', '&username') FROM dual;
+--get ddl for all grants to user
+DECLARE
+ v_output   VARCHAR2(32767);
+ v_username VARCHAR2(64) := '&username' ;
+ exc_no_role_grant EXCEPTION ;
+ PRAGMA exception_init(exc_no_role_grant, -31608);
+BEGIN
+  SELECT DBMS_METADATA.GET_GRANTED_DDL('ROLE_GRANT', v_username)
+  INTO v_output
+  FROM dual;
+  dbms_output.put_line(v_output);
+EXCEPTION
+  WHEN exc_no_role_grant THEN NULL;
+END;
+/
 
 -- get ddl for all system grants to the user
 DECLARE
