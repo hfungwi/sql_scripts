@@ -14,40 +14,26 @@ SET FEEDBACK OFF
 SET VERIFY OFF
 SET TRIMSPOOL ON
 
+-- prompt user for username
 DEFINE username = &username ;
 
+-- store output of script in a sql file that could be run to recreate the user
 spool dbms_stats.crtusr_${ORACLE_SID}_&username..sql
+
+--for better output
 BEGIN
    DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
    DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'PRETTY', true);
 END;
 /
 
+-- GENERATE DDL FOR CREATING THE USER
 SELECT DBMS_METADATA.GET_DDL('USER','&username') FROM dual;
 
-DECLARE
- v_username VARCHAR2(128) := '&username' ;
- CURSOR granted_role_cur is
-          SELECT granted_role
-          FROM   dba_role_privs
-          WHERE grantee = v_username
-          AND    granted_role NOT IN ('PLUSTRACE', 'CONNECT','RESOURCE');
- v_rolename VARCHAR2(64);
- v_output   VARCHAR2(32767);
-BEGIN
-    FOR i in granted_role_cur
-      LOOP
-       v_rolename := i.granted_role;
-        SELECT DBMS_METADATA.get_ddl ('ROLE', v_rolename)
-        INTO v_output
-        FROM DUAL;
-        dbms_output.put_line(v_output);
-      END LOOP;
-END;
-/
-
+--get ddl for all grantes to user
 SELECT DBMS_METADATA.GET_GRANTED_DDL('ROLE_GRANT', '&username') FROM dual;
 
+-- get ddl for all system grants to the user
 DECLARE
  v_output VARCHAR2(32767);
  v_username VARCHAR2(64) := '&username' ;
@@ -62,60 +48,23 @@ EXCEPTION
   WHEN exc_no_sys_grant THEN NULL;
 END;
 /
-
+   
+-- get ddl for all object grants to user
 DECLARE
-  exc_no_obj_grant EXCEPTION ;
-  PRAGMA exception_init(exc_no_obj_grant, -31608);
-  v_output VARCHAR2(32767);
-  v_username VARCHAR2(64) := '&username' ;
-   CURSOR granted_role_cur is
-          SELECT granted_role
-          FROM   dba_role_privs
-          WHERE grantee = v_username
-          AND    granted_role NOT IN ('PLUSTRACE', 'CONNECT','RESOURCE');
-  v_rolename VARCHAR2(64) ;
-
-TYPE role_table  IS TABLE OF VARCHAR2(64);
-list_of_roles role_table ;
+  exc_no_obj_grant EXCEPTION;
+  PRAGMA EXCEPTION_INIT(exc_no_obj_grant, -31608);
+  v_output     CLOB;
+  v_username   VARCHAR2(64) := '&username';
 BEGIN
- SELECT granted_role BULK COLLECT INTO list_of_roles
-  FROM   dba_role_privs
-  WHERE  grantee = v_username
-  AND    granted_role NOT IN ('PLUSTRACE','CONNECT','RESOURCE');
-
-  IF list_of_roles.count = 0
-   THEN
-          SELECT
-                DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT', v_username )
-          INTO  v_output
-          FROM dual;
-                dbms_output.put_line(v_output);
-  ELSE
-     FOR l_roles in 1 .. list_of_roles.count
-      LOOP
-        SELECT
-                DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT', l_roles )
-          INTO  v_output
-          FROM dual;
-                dbms_output.put_line(v_output);
-      END LOOP;
-        SELECT
-                DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT', v_username )
-          INTO  v_output
-          FROM dual;
-                dbms_output.put_line(v_output);
-  END IF;
-EXCEPTION
-  WHEN exc_no_obj_grant THEN
-     FOR i in granted_role_cur
-       LOOP
-         v_rolename := i.granted_role ;
-            SELECT
-                  DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT', v_rolename)
-            INTO  v_output
-            FROM  dual ;
-                  dbms_output.put_line(v_output);
-       END LOOP;
+    BEGIN
+      SELECT DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT', v_username)
+      INTO   v_output
+      FROM   dual;
+      DBMS_OUTPUT.PUT_LINE(DBMS_LOB.SUBSTR(v_output, 32767, 1));
+    EXCEPTION
+      WHEN exc_no_obj_grant THEN
+        DBMS_OUTPUT.PUT_LINE('-- No object grants found for ' || v_username);
+    END;
 END;
 /
 
@@ -126,3 +75,13 @@ WHERE  owner = UPPER('&USERNAME')
 
 
 spool off;
+SET HEADING ON
+SET FEEDBACK ON
+SET VERIFY ON
+SET TRIMSPOOL OFF
+SET PAGESIZE 14
+SET LONG 80
+SET LONGCHUNKSIZE 80
+SET LINESIZE 80
+SET SERVEROUTPUT OFF
+                                                                 
