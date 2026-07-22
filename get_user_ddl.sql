@@ -1,6 +1,6 @@
 ---------------------------------------------
 -- author : Harris Fungwi
--- desc   : Used to
+-- desc   : Used to generate ddl for a user
 -- date   : 27-MAR-2025
 -- usage  : @get_user_ddl.sql
 ---------------------------------------------
