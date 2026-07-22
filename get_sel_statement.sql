@@ -9,6 +9,7 @@ BEGIN
         ' SELECT ' || LISTAGG(column_name, ', ') WITHIN GROUP (ORDER BY column_id) || ' FROM ' || table_name || ' ;'
    INTO
         v_sel_stmt
+   FROM
         all_tab_columns
     WHERE
         upper(table_name) = upper(v_tab_name)
