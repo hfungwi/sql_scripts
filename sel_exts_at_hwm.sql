@@ -23,7 +23,7 @@ SELECT *
                   FROM   dba_extents e
                   WHERE  e.tablespace_name = '&tablespace_name'
                   AND    e.segment_name = '&segment_name'
-                  ORDER BY e.extent_id DESC
+                  ORDER BY e.block_id DESC
                )
 WHERE rownum <= 40
 /
