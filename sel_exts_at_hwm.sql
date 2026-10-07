@@ -4,6 +4,11 @@
 --       in a tablespace.
 -- date: 15th July 2026
 ------------------------------------------------------
+set linesize 150
+col segment_name for a20
+col tablespace_name for a20
+set pagesize 100
+    
 SELECT *
     FROM (
             SELECT
