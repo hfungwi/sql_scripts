@@ -16,8 +16,8 @@ SELECT *
                          e.blocks,
                          ROUND((e.block_id + e.blocks) * 8192 / 1024 / 1024, 2) AS end_position_mb
                   FROM   dba_extents e
-                  WHERE  e.tablespace_name = 'BCWINPUT_DATA1'
-                  AND    e.segment_name = 'ECC_LFA1'
+                  WHERE  e.tablespace_name = '&tablespace_name'
+                  AND    e.segment_name = '&segment_name'
                   ORDER BY e.extent_id DESC
                )
 WHERE rownum <= 40
